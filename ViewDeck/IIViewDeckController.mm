@@ -71,6 +71,7 @@ NSString* NSStringFromIIViewDeckSide(IIViewDeckSide side) {
 @property (nonatomic) UIScreenEdgePanGestureRecognizer *leftEdgeGestureRecognizer;
 @property (nonatomic) UIScreenEdgePanGestureRecognizer *rightEdgeGestureRecognizer;
 @property (nonatomic) UITapGestureRecognizer *decorationTapGestureRecognizer;
+@property (nonatomic) UIPanGestureRecognizer *panGestureRecognizer;
 
 @property (nonatomic) UIView *currentDecorationView;
 
@@ -151,6 +152,7 @@ II_DELEGATE_PROXY(IIViewDeckControllerDelegate);
     let view = self.view;
     [view addGestureRecognizer:self.leftEdgeGestureRecognizer];
     [view addGestureRecognizer:self.rightEdgeGestureRecognizer];
+    [view addGestureRecognizer:self.panGestureRecognizer];
 
     [self ii_exchangeViewFromController:nil toController:self.centerViewController inContainerView:self.view];
 }
@@ -357,6 +359,15 @@ __unused static inline BOOL IIIsAllowedTransition(IIViewDeckSide fromSide, IIVie
     return _leftEdgeGestureRecognizer;
 }
 
+- (UIPanGestureRecognizer *)panGestureRecognizer {
+    if (_panGestureRecognizer) {
+        return _panGestureRecognizer;
+    }
+    
+    _panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(interactiveTransitionRecognized:)];
+    return _panGestureRecognizer;
+}
+
 - (UIScreenEdgePanGestureRecognizer *)rightEdgeGestureRecognizer {
     if (_rightEdgeGestureRecognizer) {
         return _rightEdgeGestureRecognizer;
@@ -387,6 +398,8 @@ __unused static inline BOOL IIIsAllowedTransition(IIViewDeckSide fromSide, IIVie
                 side = IIViewDeckSideLeft;
             } else if (recognizer == self.rightEdgeGestureRecognizer) {
                 side = IIViewDeckSideRight;
+            } else if (recognizer == self.panGestureRecognizer) {
+                side = IIViewDeckSideNone;
             } else {
                 NSAssert(NO, @"A gesture recognizer (%@) triggered an interactive view transition that is not controlled by this istance of %@, (%@).", recognizer, NSStringFromClass(self.class), self);
                 return;
@@ -428,6 +441,7 @@ __unused static inline BOOL IIIsAllowedTransition(IIViewDeckSide fromSide, IIVie
     BOOL panningEnabled = self.isPanningEnabled;
     self.leftEdgeGestureRecognizer.enabled = (panningEnabled && self.leftViewController && self.openSide == IIViewDeckSideNone);
     self.rightEdgeGestureRecognizer.enabled = (panningEnabled && self.rightViewController && self.openSide == IIViewDeckSideNone);
+    self.panGestureRecognizer.enabled = (panningEnabled && self.openSide != IIViewDeckSideNone);
     self.decorationTapGestureRecognizer.enabled = (self.openSide != IIViewDeckSideNone);
 }
 
